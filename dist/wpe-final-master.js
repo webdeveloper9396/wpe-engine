@@ -1,15 +1,21 @@
 (function () {
     'use strict';
+
+    /* =================================================
+       WPE DEBUG MODE
+       ================================================= */
+    const WPE_DEBUG =
+        location.search.includes("wpe_debug=1");
+
     if (WPE_DEBUG) {
         console.log("[WPE FINAL MASTER] Engine Loaded");
     }
-    // ==========================================
-    // WPE Debug Mode
-    // Enable using:
-    // https://yoursite.com/?wpe_debug=1
-    // ==========================================
-    const WPE_DEBUG = location.search.includes("wpe_debug=1");
+
+    /* =================================================
+       ENGINE CORE
+       ================================================= */
     const WPE = {
+
         state: {
             mode: "SAFE",
             auto: true,
@@ -26,18 +32,25 @@
             longTasks: 0
         },
 
+        intervals: {},
+
+        /* ================= INIT ================= */
         init() {
             this.detectEnvironment();
             this.setupObservers();
             this.runAnalyzer();
             this.autoOptimizer();
-            this.debugConsole();
 
-            console.log("[WPE FINAL MASTER] Active");
+            if (WPE_DEBUG) {
+                this.dashboard();
+                this.debugConsole();
+                console.log("[WPE FINAL MASTER] Active");
+            }
         },
 
-        /* ---------------- ENV DETECT ---------------- */
+        /* ================= ENV ================= */
         detectEnvironment() {
+
             const mem = navigator.deviceMemory || 4;
             const cpu = navigator.hardwareConcurrency || 4;
 
@@ -49,10 +62,12 @@
                 this.state.mode = "SAFE";
             }
 
-            console.log("[WPE MODE]", this.state.mode);
+            if (WPE_DEBUG) {
+                console.log("[WPE MODE]", this.state.mode);
+            }
         },
 
-        /* ---------------- OBSERVERS ---------------- */
+        /* ================= OBSERVERS ================= */
         setupObservers() {
 
             try {
@@ -78,16 +93,17 @@
                 }).observe({ type: "longtask", buffered: true });
             } catch (e) {}
 
-            setInterval(() => {
+            this.intervals.metrics = setInterval(() => {
                 this.metrics.dom = document.getElementsByTagName("*").length;
                 this.metrics.images = document.images.length;
                 this.metrics.scripts = document.scripts.length;
             }, 1500);
         },
 
-        /* ---------------- ANALYZER ---------------- */
+        /* ================= ANALYZER ================= */
         runAnalyzer() {
-            setInterval(() => {
+
+            this.intervals.analyzer = setInterval(() => {
 
                 let score = 100;
 
@@ -105,10 +121,10 @@
             }, 1500);
         },
 
-        /* ---------------- AUTO OPTIMIZER ---------------- */
+        /* ================= OPTIMIZER ================= */
         autoOptimizer() {
 
-            setInterval(() => {
+            this.intervals.optimizer = setInterval(() => {
 
                 if (!this.state.auto) return;
 
@@ -119,56 +135,79 @@
             }, 2500);
         },
 
-        /* ---------------- FIX ENGINE ---------------- */
+        /* ================= FIX ENGINE ================= */
         fixLCP() {
+
             document.querySelectorAll("img").forEach(img => {
+
                 if (img.closest(".hero")) {
-                    const link = document.createElement("link");
-                    link.rel = "preload";
-                    link.as = "image";
-                    link.href = img.src;
-                    document.head.appendChild(link);
+
+                    if (!document.querySelector(`link[href="${img.src}"]`)) {
+
+                        const link = document.createElement("link");
+                        link.rel = "preload";
+                        link.as = "image";
+                        link.href = img.src;
+
+                        document.head.appendChild(link);
+                    }
 
                     img.loading = "eager";
                 }
             });
 
             this.state.fixes++;
-            console.log("[WPE FIX] LCP optimized");
+
+            if (WPE_DEBUG) {
+                console.log("[WPE FIX] LCP optimized");
+            }
         },
 
         fixINP() {
+
             const heavy = ["facebook", "gtag", "chat", "hotjar"];
 
             document.querySelectorAll("script[src]").forEach(s => {
+
                 if (heavy.some(k => s.src.includes(k))) {
                     s.defer = true;
                 }
             });
 
             this.state.fixes++;
-            console.log("[WPE FIX] INP optimized");
+
+            if (WPE_DEBUG) {
+                console.log("[WPE FIX] INP optimized");
+            }
         },
 
         fixDOM() {
-            document.querySelectorAll("[data-temp], [data-unused]").forEach(el => el.remove());
+
+            document.querySelectorAll("[data-wpe-temp], [data-wpe-unused]").forEach(el => el.remove());
+
             this.state.fixes++;
-            console.log("[WPE FIX] DOM cleaned");
+
+            if (WPE_DEBUG) {
+                console.log("[WPE FIX] DOM cleaned");
+            }
         },
 
-        /* ---------------- DebugConsole ---------------- */
+        /* ================= DEBUG ================= */
         debugConsole() {
+
             if (!WPE_DEBUG) return;
-        
-            console.log("%c🚀 WPE Debug Mode Enabled", "color:#00d084;font-size:14px;font-weight:bold;");
-        
-            setInterval(() => {
-        
+
+            console.log("%c🚀 WPE Debug Mode Enabled",
+                "color:#00d084;font-size:14px;font-weight:bold;"
+            );
+
+            this.intervals.debug = setInterval(() => {
+
                 console.groupCollapsed(
                     `%c🚀 WPE REPORT (${new Date().toLocaleTimeString()})`,
                     "color:#00d084;font-weight:bold;"
                 );
-        
+
                 console.table({
                     Mode: this.state.mode,
                     Score: this.state.score,
@@ -180,15 +219,72 @@
                     LongTasks: this.metrics.longTasks,
                     Fixes: this.state.fixes
                 });
-        
+
                 console.groupEnd();
-        
+
             }, 3000);
-        
+        },
+
+        /* ================= DASHBOARD ================= */
+        dashboard() {
+
+            if (!WPE_DEBUG) return;
+            if (document.getElementById("wpe-dashboard")) return;
+
+            const ui = document.createElement("div");
+            ui.id = "wpe-dashboard";
+
+            ui.style.cssText = `
+                position:fixed;
+                bottom:15px;
+                right:15px;
+                width:260px;
+                background:#0a0f1f;
+                color:#00ffae;
+                font-family:monospace;
+                font-size:12px;
+                padding:10px;
+                border-radius:10px;
+                z-index:999999;
+                box-shadow:0 0 20px rgba(0,255,174,0.3);
+            `;
+
+            ui.innerHTML = `
+                <b>🚀 WPE FINAL MASTER</b><br><br>
+
+                Mode: <span id="mode"></span><br>
+                Score: <span id="score"></span>/100<br>
+                LCP: <span id="lcp"></span><br>
+                INP: <span id="inp"></span><br>
+                DOM: <span id="dom"></span><br>
+                Images: <span id="img"></span><br>
+                Scripts: <span id="js"></span><br>
+                Fixes: <span id="fix"></span><br>
+            `;
+
+            document.body.appendChild(ui);
+
+            this.intervals.dashboard = setInterval(() => {
+
+                const set = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = val;
+                };
+
+                set("mode", this.state.mode);
+                set("score", this.state.score);
+                set("lcp", Math.round(this.metrics.lcp));
+                set("inp", Math.round(this.metrics.inp));
+                set("dom", this.metrics.dom);
+                set("img", this.metrics.images);
+                set("js", this.metrics.scripts);
+                set("fix", this.state.fixes);
+
+            }, 1000);
         }
     };
 
-    /* ---------------- START ---------------- */
+    /* ================= START ================= */
     const start = () => {
         setTimeout(() => WPE.init(), 1200);
     };
@@ -198,5 +294,8 @@
     } else {
         window.addEventListener("load", start);
     }
+
+    /* ================= GLOBAL ACCESS (DEBUG) ================= */
+    window.WPE = WPE;
 
 })();
