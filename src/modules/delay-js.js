@@ -1,21 +1,35 @@
-(function () {
+export function delayHeavyScripts() {
 
-    const delay = ["facebook", "chat", "pixel", "analytics"];
+    const BLOCK_PATTERNS = [
+        "gtag",
+        "googletagmanager",
+        "facebook",
+        "hotjar",
+        "chat",
+        "ads",
+        "analytics"
+    ];
 
-    document.querySelectorAll("script[src]").forEach(s => {
-        if (delay.some(d => s.src.includes(d))) {
-            const src = s.src;
-            s.remove();
+    const scripts = document.querySelectorAll("script[src]");
 
-            setTimeout(() => {
-                const n = document.createElement("script");
-                n.src = src;
-                n.async = true;
-                document.body.appendChild(n);
-            }, 4000);
+    scripts.forEach(script => {
+
+        const src = script.src.toLowerCase();
+
+        if (BLOCK_PATTERNS.some(p => src.includes(p))) {
+
+            const clone = script.cloneNode(true);
+            script.remove();
+
+            const loadLater = () => {
+                document.body.appendChild(clone);
+            };
+
+            if ("requestIdleCallback" in window) {
+                requestIdleCallback(loadLater, { timeout: 3000 });
+            } else {
+                setTimeout(loadLater, 2000);
+            }
         }
     });
-
-    console.log("[WPE] Third-party delayed");
-
-})();
+}
