@@ -1,14 +1,25 @@
-(function () {
+export function criticalCSSBoost() {
 
-    const links = document.querySelectorAll('link[rel="stylesheet"]');
+    const style = document.createElement("style");
 
-    links.forEach(link => {
-        if (!link.href.includes("critical")) {
-            link.media = "print";
-            link.onload = () => link.media = "all";
+    style.innerHTML = `
+        /* Reduce render blocking */
+        html, body {
+            opacity: 1 !important;
+            visibility: visible !important;
         }
-    });
 
-    console.log("[WPE] CSS optimized");
+        /* Improve rendering performance */
+        img {
+            content-visibility: auto;
+            contain-intrinsic-size: 300px;
+        }
 
-})();
+        /* Reduce layout shift */
+        * {
+            box-sizing: border-box;
+        }
+    `;
+
+    document.head.appendChild(style);
+}
