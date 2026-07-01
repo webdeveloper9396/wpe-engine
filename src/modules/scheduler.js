@@ -1,17 +1,30 @@
-(function () {
+import { delayHeavyScripts } from "./delay-js.js";
+import { optimizeImages } from "./images.js";
+import { injectResourceHints } from "./network.js";
+import { criticalCSSBoost } from "./css.js";
 
-    const run = (cb) => {
-        if (window.requestIdleCallback) {
-            requestIdleCallback(cb);
-        } else {
-            setTimeout(cb, 1000);
-        }
-    };
+export function runScheduler() {
 
-    run(() => {
-        console.log("[WPE] Idle cleanup running");
-
-        document.querySelectorAll("[data-unused]").forEach(el => el.remove());
+    // 1. Early render boost
+    document.addEventListener("DOMContentLoaded", () => {
+        injectResourceHints();
+        criticalCSSBoost();
     });
 
-})();
+    // 2. Image optimization (after DOM)
+    setTimeout(() => {
+        optimizeImages();
+    }, 500);
+
+    // 3. Heavy JS delay (AFTER FULL LOAD)
+    window.addEventListener("load", () => {
+        delayHeavyScripts();
+    });
+
+    // 4. Idle optimization
+    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 2000));
+
+    idle(() => {
+        optimizeImages();
+    });
+}
