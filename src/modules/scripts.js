@@ -1,101 +1,29 @@
-export default class ScriptsModule {
+(function () {
 
-    constructor() {
+    const heavy = ["facebook", "gtag", "analytics", "hotjar", "pixel", "chat"];
 
-        this.scripts = [];
+    const scripts = document.querySelectorAll("script[src]");
+    const queue = [];
 
-    }
-
-    /**
-     * Init module
-     */
-    init(engine) {
-
-        this.engine = engine;
-
-        this.scripts = Array.from(document.querySelectorAll("script"));
-
-        this.processScripts();
-
-        this.engine.logger?.log("Scripts module initialized");
-
-    }
-
-    /**
-     * Process all scripts
-     */
-    processScripts() {
-
-        for (const script of this.scripts) {
-
-            try {
-
-                // Skip engine script itself
-                if (script.src && script.src.includes("speed-engine")) continue;
-
-                // Skip inline critical scripts
-                if (!script.src && !script.dataset.delay) continue;
-
-                // Delay marked scripts
-                if (script.dataset.delay === "true") {
-
-                    this.deferScript(script);
-
-                }
-
-            } catch (err) {
-
-                console.warn("Script processing error:", err);
-
-            }
-
+    scripts.forEach(s => {
+        if (heavy.some(k => s.src.includes(k))) {
+            queue.push(s.src);
+            s.remove();
         }
+    });
 
-    }
-
-    /**
-     * Defer script execution
-     */
-    deferScript(script) {
-
-        const src = script.src;
-
-        if (!src) return;
-
-        script.type = "text/plain";
-        script.removeAttribute("src");
-
-        this.loadLater(src);
-
-    }
-
-    /**
-     * Load script later (idle time)
-     */
-    loadLater(src) {
-
-        const load = () => {
-
+    const load = () => {
+        queue.forEach(src => {
             const s = document.createElement("script");
-
             s.src = src;
             s.async = true;
-            s.defer = true;
+            document.body.appendChild(s);
+        });
+    };
 
-            document.head.appendChild(s);
+    setTimeout(load, 3000);
+    window.addEventListener("scroll", load, { once: true });
 
-        };
+    console.log("[WPE] Scripts delayed");
 
-        if ("requestIdleCallback" in window) {
-
-            requestIdleCallback(load, { timeout: 2000 });
-
-        } else {
-
-            setTimeout(load, 1000);
-
-        }
-
-    }
-
-}
+})();
