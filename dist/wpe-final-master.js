@@ -25,7 +25,7 @@
             this.setupObservers();
             this.runAnalyzer();
             this.autoOptimizer();
-            this.dashboard();
+            this.debugConsole();
 
             console.log("[WPE FINAL MASTER] Active");
         },
@@ -150,54 +150,31 @@
             console.log("[WPE FIX] DOM cleaned");
         },
 
-        /* ---------------- DASHBOARD ---------------- */
-        dashboard() {
-
-            const ui = document.createElement("div");
-
-            ui.style.cssText = `
-                position:fixed;
-                bottom:15px;
-                right:15px;
-                width:260px;
-                background:#0a0f1f;
-                color:#00ffae;
-                font-family:monospace;
-                font-size:12px;
-                padding:10px;
-                border-radius:10px;
-                z-index:999999;
-                box-shadow:0 0 20px rgba(0,255,174,0.3);
-            `;
-
-            ui.innerHTML = `
-                <b>🚀 WPE FINAL MASTER</b><br><br>
-
-                Mode: <span id="mode"></span><br>
-                Score: <span id="score"></span>/100<br>
-                LCP: <span id="lcp"></span><br>
-                INP: <span id="inp"></span><br>
-                DOM: <span id="dom"></span><br>
-                Images: <span id="img"></span><br>
-                Scripts: <span id="js"></span><br>
-                Fixes: <span id="fix"></span><br>
-            `;
-
-            document.body.appendChild(ui);
-
+        /* ---------------- DebugConsole ---------------- */
+        debugConsole() {
+        
             setInterval(() => {
-
-                document.getElementById("mode").innerText = this.state.mode;
-                document.getElementById("score").innerText = this.state.score;
-
-                document.getElementById("lcp").innerText = Math.round(this.metrics.lcp);
-                document.getElementById("inp").innerText = Math.round(this.metrics.inp);
-                document.getElementById("dom").innerText = this.metrics.dom;
-                document.getElementById("img").innerText = this.metrics.images;
-                document.getElementById("js").innerText = this.metrics.scripts;
-                document.getElementById("fix").innerText = this.state.fixes;
-
-            }, 1000);
+        
+                console.clear();
+        
+                console.group("🚀 WPE FINAL MASTER");
+        
+                console.table({
+                    Mode: this.state.mode,
+                    Score: this.state.score,
+                    LCP: Math.round(this.metrics.lcp),
+                    INP: Math.round(this.metrics.inp),
+                    DOM: this.metrics.dom,
+                    Images: this.metrics.images,
+                    Scripts: this.metrics.scripts,
+                    LongTasks: this.metrics.longTasks,
+                    Fixes: this.state.fixes
+                });
+        
+                console.groupEnd();
+        
+            }, 3000);
+        
         }
     };
 
