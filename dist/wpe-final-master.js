@@ -1,55 +1,68 @@
 (function () {
     'use strict';
 
-    /* =================================================
-       WPE DEBUG MODE
-       ================================================= */
-    const WPE_DEBUG =
-        location.search.includes("wpe_debug=1");
+    /* =========================================
+       DEBUG GATE (ONLY ?wpe_debug=1)
+    ========================================= */
+    const WPE_DEBUG = location.search.includes("wpe_debug=1");
 
+    /* =========================================
+       CORE BOOT LOGIC
+    ========================================= */
     if (WPE_DEBUG) {
-        console.log("[WPE FINAL MASTER] Engine Loaded");
+        console.log("[WPE AI v20 SaaS] Booting Engine...");
     }
 
-    /* =================================================
-       ENGINE CORE
-       ================================================= */
+    /* =========================================
+       SAAS CORE ENGINE
+    ========================================= */
     const WPE = {
+
+        version: "v20-saas-core",
 
         state: {
             mode: "SAFE",
-            auto: true,
             score: 100,
-            fixes: 0
+            fixes: 0,
+            running: false,
+            queue: []
         },
 
         metrics: {
             lcp: 0,
             inp: 0,
+            cls: 0,
             dom: 0,
-            images: 0,
             scripts: 0,
+            images: 0,
             longTasks: 0
         },
 
-        intervals: {},
+        timers: {},
 
-        /* ================= INIT ================= */
+        /* =====================================
+           INIT SYSTEM
+        ===================================== */
         init() {
-            this.detectEnvironment();
-            this.setupObservers();
-            this.runAnalyzer();
-            this.autoOptimizer();
+
+            if (this.state.running) return;
+            this.state.running = true;
+
+            this.detectDevice();
+            this.initObservers();
+            this.initScheduler();
 
             if (WPE_DEBUG) {
-                this.dashboard();
-                this.debugConsole();
-                console.log("[WPE FINAL MASTER] Active");
+                this.initDebugConsole();
+                this.initDashboard();
+                console.log("[WPE AI v20] ACTIVE");
             }
         },
 
-        /* ================= ENV ================= */
-        detectEnvironment() {
+        /* =====================================
+           DEVICE INTELLIGENCE
+        ===================================== */
+        detectDevice() {
 
             const mem = navigator.deviceMemory || 4;
             const cpu = navigator.hardwareConcurrency || 4;
@@ -62,18 +75,18 @@
                 this.state.mode = "SAFE";
             }
 
-            if (WPE_DEBUG) {
-                console.log("[WPE MODE]", this.state.mode);
-            }
+            if (WPE_DEBUG) console.log("[MODE]", this.state.mode);
         },
 
-        /* ================= OBSERVERS ================= */
-        setupObservers() {
+        /* =====================================
+           PERFORMANCE TRACKING
+        ===================================== */
+        initObservers() {
 
             try {
                 new PerformanceObserver((list) => {
-                    const e = list.getEntries();
-                    this.metrics.lcp = e.at(-1)?.startTime || 0;
+                    const entries = list.getEntries();
+                    this.metrics.lcp = entries.at(-1)?.startTime || 0;
                 }).observe({ type: "largest-contentful-paint", buffered: true });
             } catch (e) {}
 
@@ -93,120 +106,166 @@
                 }).observe({ type: "longtask", buffered: true });
             } catch (e) {}
 
-            this.intervals.metrics = setInterval(() => {
+            this.timers.metrics = setInterval(() => {
+
                 this.metrics.dom = document.getElementsByTagName("*").length;
                 this.metrics.images = document.images.length;
                 this.metrics.scripts = document.scripts.length;
-            }, 1500);
-        },
-
-        /* ================= ANALYZER ================= */
-        runAnalyzer() {
-
-            this.intervals.analyzer = setInterval(() => {
-
-                let score = 100;
-
-                if (this.metrics.lcp > 3000) score -= 30;
-                else if (this.metrics.lcp > 2000) score -= 15;
-
-                if (this.metrics.inp > 250) score -= 25;
-                else if (this.metrics.inp > 120) score -= 10;
-
-                if (this.metrics.dom > 2000) score -= 15;
-                if (this.metrics.longTasks > 5) score -= 20;
-
-                this.state.score = Math.max(score, 0);
 
             }, 1500);
         },
 
-        /* ================= OPTIMIZER ================= */
-        autoOptimizer() {
+        /* =====================================
+           SAAS SCHEDULER ENGINE
+        ===================================== */
+        initScheduler() {
 
-            this.intervals.optimizer = setInterval(() => {
+            document.addEventListener("DOMContentLoaded", () => {
+                this.optimizeImages();
+                this.injectPreconnect();
+                this.optimizeCSS();
+            });
 
-                if (!this.state.auto) return;
-
-                if (this.metrics.lcp > 2500) this.fixLCP();
-                if (this.metrics.inp > 200) this.fixINP();
-                if (this.metrics.dom > 2200) this.fixDOM();
-
-            }, 2500);
+            window.addEventListener("load", () => {
+                this.delayThirdPartyScripts();
+                this.runScoringEngine();
+            });
         },
 
-        /* ================= FIX ENGINE ================= */
-        fixLCP() {
+        /* =====================================
+           IMAGE OPTIMIZER (SAFE)
+        ===================================== */
+        optimizeImages() {
 
             document.querySelectorAll("img").forEach(img => {
 
-                if (img.closest(".hero")) {
+                const critical =
+                    img.closest("header") ||
+                    img.closest(".hero") ||
+                    img.closest(".banner");
 
-                    if (!document.querySelector(`link[href="${img.src}"]`)) {
-
-                        const link = document.createElement("link");
-                        link.rel = "preload";
-                        link.as = "image";
-                        link.href = img.src;
-
-                        document.head.appendChild(link);
-                    }
-
+                if (critical) {
                     img.loading = "eager";
+                    img.fetchPriority = "high";
+                } else {
+                    img.loading = "lazy";
+                }
+
+                img.decoding = "async";
+            });
+
+            this.state.fixes++;
+        },
+
+        /* =====================================
+           SCRIPT DELAY ENGINE (SAFE SAAS STYLE)
+        ===================================== */
+        delayThirdPartyScripts() {
+
+            const BLOCK = [
+                "gtag",
+                "googletagmanager",
+                "facebook",
+                "hotjar",
+                "analytics",
+                "ads"
+            ];
+
+            document.querySelectorAll("script[src]").forEach(script => {
+
+                if (BLOCK.some(k => script.src.includes(k))) {
+
+                    const clone = script.cloneNode(true);
+                    script.remove();
+
+                    const delay = this.state.mode === "AGGRESSIVE"
+                        ? 2500
+                        : this.state.mode === "BALANCED"
+                            ? 1200
+                            : 600;
+
+                    setTimeout(() => {
+                        document.body.appendChild(clone);
+                    }, delay);
                 }
             });
 
             this.state.fixes++;
-
-            if (WPE_DEBUG) {
-                console.log("[WPE FIX] LCP optimized");
-            }
         },
 
-        fixINP() {
+        /* =====================================
+           CSS BOOST (SAFE)
+        ===================================== */
+        optimizeCSS() {
 
-            const heavy = ["facebook", "gtag", "chat", "hotjar"];
+            const style = document.createElement("style");
 
-            document.querySelectorAll("script[src]").forEach(s => {
+            style.textContent = `
+                html,body{overflow-x:hidden;}
+                img{content-visibility:auto;}
+                *{box-sizing:border-box;}
+            `;
 
-                if (heavy.some(k => s.src.includes(k))) {
-                    s.defer = true;
+            document.head.appendChild(style);
+        },
+
+        /* =====================================
+           PRECONNECT SYSTEM
+        ===================================== */
+        injectPreconnect() {
+
+            const domains = [
+                "https://fonts.googleapis.com",
+                "https://fonts.gstatic.com"
+            ];
+
+            domains.forEach(url => {
+
+                const link = document.createElement("link");
+                link.rel = "preconnect";
+                link.href = url;
+
+                if (url.includes("gstatic")) {
+                    link.crossOrigin = "anonymous";
                 }
+
+                document.head.appendChild(link);
             });
-
-            this.state.fixes++;
-
-            if (WPE_DEBUG) {
-                console.log("[WPE FIX] INP optimized");
-            }
         },
 
-        fixDOM() {
+        /* =====================================
+           SCORING ENGINE (REALISTIC)
+        ===================================== */
+        runScoringEngine() {
 
-            document.querySelectorAll("[data-wpe-temp], [data-wpe-unused]").forEach(el => el.remove());
+            this.timers.score = setInterval(() => {
 
-            this.state.fixes++;
+                let score = 100;
 
-            if (WPE_DEBUG) {
-                console.log("[WPE FIX] DOM cleaned");
-            }
+                score -= Math.min(this.metrics.lcp / 120, 35);
+                score -= Math.min(this.metrics.inp / 15, 25);
+                score -= Math.min(this.metrics.dom / 300, 15);
+                score -= Math.min(this.metrics.longTasks * 2, 20);
+
+                this.state.score = Math.max(Math.round(score), 0);
+
+            }, 1500);
         },
 
-        /* ================= DEBUG ================= */
-        debugConsole() {
+        /* =====================================
+           DEBUG CONSOLE (ONLY DEBUG MODE)
+        ===================================== */
+        initDebugConsole() {
 
             if (!WPE_DEBUG) return;
 
-            console.log("%c🚀 WPE Debug Mode Enabled",
-                "color:#00d084;font-size:14px;font-weight:bold;"
+            console.log("%c🚀 WPE AI v20 SaaS DEBUG",
+                "color:#00ffae;font-weight:bold;"
             );
 
-            this.intervals.debug = setInterval(() => {
+            this.timers.debug = setInterval(() => {
 
-                console.groupCollapsed(
-                    `%c🚀 WPE REPORT (${new Date().toLocaleTimeString()})`,
-                    "color:#00d084;font-weight:bold;"
-                );
+                console.group("WPE AI v20 REPORT");
 
                 console.table({
                     Mode: this.state.mode,
@@ -225,77 +284,75 @@
             }, 3000);
         },
 
-        /* ================= DASHBOARD ================= */
-        dashboard() {
+        /* =====================================
+           DASHBOARD (ONLY DEBUG MODE)
+        ===================================== */
+        initDashboard() {
 
             if (!WPE_DEBUG) return;
-            if (document.getElementById("wpe-dashboard")) return;
+            if (document.getElementById("wpe-v20-ui")) return;
 
-            const ui = document.createElement("div");
-            ui.id = "wpe-dashboard";
+            const box = document.createElement("div");
+            box.id = "wpe-v20-ui";
 
-            ui.style.cssText = `
+            box.style.cssText = `
                 position:fixed;
                 bottom:15px;
                 right:15px;
-                width:260px;
-                background:#0a0f1f;
+                width:240px;
+                background:#0b0f1a;
                 color:#00ffae;
                 font-family:monospace;
-                font-size:12px;
+                font-size:11px;
                 padding:10px;
                 border-radius:10px;
                 z-index:999999;
-                box-shadow:0 0 20px rgba(0,255,174,0.3);
             `;
 
-            ui.innerHTML = `
-                <b>🚀 WPE FINAL MASTER</b><br><br>
-
-                Mode: <span id="mode"></span><br>
-                Score: <span id="score"></span>/100<br>
-                LCP: <span id="lcp"></span><br>
-                INP: <span id="inp"></span><br>
-                DOM: <span id="dom"></span><br>
-                Images: <span id="img"></span><br>
-                Scripts: <span id="js"></span><br>
-                Fixes: <span id="fix"></span><br>
+            box.innerHTML = `
+                <b>WPE AI v20 SaaS</b><br><br>
+                Mode: <span id="m"></span><br>
+                Score: <span id="s"></span><br>
+                LCP: <span id="l"></span><br>
+                INP: <span id="i"></span><br>
+                DOM: <span id="d"></span><br>
             `;
 
-            document.body.appendChild(ui);
+            document.body.appendChild(box);
 
-            this.intervals.dashboard = setInterval(() => {
+            this.timers.dashboard = setInterval(() => {
 
                 const set = (id, val) => {
                     const el = document.getElementById(id);
                     if (el) el.innerText = val;
                 };
 
-                set("mode", this.state.mode);
-                set("score", this.state.score);
-                set("lcp", Math.round(this.metrics.lcp));
-                set("inp", Math.round(this.metrics.inp));
-                set("dom", this.metrics.dom);
-                set("img", this.metrics.images);
-                set("js", this.metrics.scripts);
-                set("fix", this.state.fixes);
+                set("m", this.state.mode);
+                set("s", this.state.score);
+                set("l", Math.round(this.metrics.lcp));
+                set("i", Math.round(this.metrics.inp));
+                set("d", this.metrics.dom);
 
             }, 1000);
         }
     };
 
-    /* ================= START ================= */
-    const start = () => {
-        setTimeout(() => WPE.init(), 1200);
+    /* =========================================
+       BOOT STRAP
+    ========================================= */
+    const boot = () => {
+        setTimeout(() => WPE.init(), 900);
     };
 
     if (document.readyState === "complete") {
-        start();
+        boot();
     } else {
-        window.addEventListener("load", start);
+        window.addEventListener("load", boot);
     }
 
-    /* ================= GLOBAL ACCESS (DEBUG) ================= */
-    window.WPE = WPE;
+    /* =========================================
+       EXPORT (SAAS READY FUTURE)
+    ========================================= */
+    window.WPE_AI = WPE;
 
 })();
