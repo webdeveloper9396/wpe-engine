@@ -1,28 +1,30 @@
-(function () {
+export function optimizeImages() {
 
     const images = document.querySelectorAll("img");
 
-    const io = new IntersectionObserver((entries, obs) => {
-        entries.forEach(entry => {
-            if (!entry.isIntersecting) return;
+    images.forEach((img, index) => {
 
-            const img = entry.target;
+        const parent = img.closest("header, .hero, .banner, .above-fold");
 
-            if (img.dataset.src) {
-                img.src = img.dataset.src;
-            }
+        if (parent) {
+
+            img.loading = "eager";
+            img.fetchPriority = "high";
+
+        } else {
 
             img.loading = "lazy";
-            img.decoding = "async";
+        }
 
-            obs.unobserve(img);
-        });
-    }, {
-        rootMargin: "200px"
+        img.decoding = "async";
+
+        // prevent layout shift
+        if (!img.hasAttribute("width") && img.naturalWidth) {
+            img.setAttribute("width", img.naturalWidth);
+        }
+
+        if (!img.hasAttribute("height") && img.naturalHeight) {
+            img.setAttribute("height", img.naturalHeight);
+        }
     });
-
-    images.forEach(img => io.observe(img));
-
-    console.log("[WPE] Images optimized");
-
-})();
+}
