@@ -1,6 +1,8 @@
 (function () {
     'use strict';
-    console.log("[WPE FINAL MASTER] Engine Loaded");
+    if (WPE_DEBUG) {
+        console.log("[WPE FINAL MASTER] Engine Loaded");
+    }
     // ==========================================
     // WPE Debug Mode
     // Enable using:
