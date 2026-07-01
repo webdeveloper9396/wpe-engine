@@ -1,78 +1,70 @@
-console.log("WPE Engine Loaded");
-
 (function () {
-  window.WPE = {
-    version: "2.0",
+    'use strict';
 
-    init: function () {
-      console.log("WPE Initialized");
+    const WPE = {
+        version: "PRO-1.0",
 
-      this.deferNonCriticalScripts();
-      this.optimizeImages();
-      this.removeRenderBlockingHints();
-      this.measurePerformance();
-    },
+        state: {
+            modules: {},
+            loaded: false
+        },
 
-    // 1. Defer heavy scripts
-    deferNonCriticalScripts: function () {
-      const scripts = document.querySelectorAll("script");
+        log(msg) {
+            console.log("[WPE PRO]", msg);
+        },
 
-      scripts.forEach((script) => {
-        if (!script.src) return;
+        async loadModule(url) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement("script");
+                s.src = url;
+                s.async = true;
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        },
 
-        // avoid breaking core scripts
-        if (script.src.includes("jquery") || script.src.includes("cycle")) {
-          script.defer = true;
-          script.async = true;
+        async init() {
+            if (this.state.loaded) return;
+            this.state.loaded = true;
+
+            this.log("Engine Starting...");
+
+            // PHASE 1 - CRITICAL (LCP BOOST)
+            await this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/critical.js");
+            await this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/images.js");
+
+            // PHASE 2 - RENDER OPTIMIZATION
+            setTimeout(async () => {
+                await this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/css.js");
+                await this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/fonts.js");
+            }, 800);
+
+            // PHASE 3 - JS CONTROL (INP BOOST)
+            setTimeout(async () => {
+                await this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/scripts.js");
+                await this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/delay-js.js");
+            }, 1500);
+
+            // PHASE 4 - NETWORK + OBSERVER
+            requestIdleCallback(() => {
+                this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/network.js");
+                this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/observers.js");
+                this.loadModule("https://webdeveloper9396.github.io/wpe-engine/dist/modules/scheduler.js");
+            });
+
+            this.log("All modules scheduled");
         }
-      });
+    };
 
-      console.log("Scripts optimized (defer applied)");
-    },
+    const start = () => {
+        setTimeout(() => WPE.init(), 900);
+    };
 
-    // 2. Image optimization
-    optimizeImages: function () {
-      const images = document.querySelectorAll("img");
-
-      images.forEach((img) => {
-        img.loading = "lazy";
-        img.decoding = "async";
-      });
-
-      console.log("Images optimized");
-    },
-
-    // 3. Remove render blocking hints
-    removeRenderBlockingHints: function () {
-      const links = document.querySelectorAll('link[rel="stylesheet"]');
-
-      links.forEach((link) => {
-        if (!link.href) return;
-
-        // mark non-critical CSS
-        if (!link.href.includes("critical")) {
-          link.media = "print";
-          link.onload = function () {
-            this.media = "all";
-          };
-        }
-      });
-
-      console.log("CSS optimized (non-critical deferred)");
-    },
-
-    // 4. Performance tracking
-    measurePerformance: function () {
-      window.addEventListener("load", () => {
-        const t = performance.timing;
-        const loadTime = t.loadEventEnd - t.navigationStart;
-
-        console.log("Page Load Time:", loadTime + "ms");
-      });
+    if (document.readyState === "complete") {
+        start();
+    } else {
+        window.addEventListener("load", start);
     }
-  };
 
-  document.addEventListener("DOMContentLoaded", function () {
-    WPE.init();
-  });
 })();
