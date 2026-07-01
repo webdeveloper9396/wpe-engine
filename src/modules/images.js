@@ -1,102 +1,28 @@
-export default class ImagesModule {
+(function () {
 
-    constructor() {
+    const images = document.querySelectorAll("img");
 
-        this.images = [];
-        this.observer = null;
+    const io = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
 
-    }
+            const img = entry.target;
 
-    /**
-     * Init module
-     */
-    init(engine) {
+            if (img.dataset.src) {
+                img.src = img.dataset.src;
+            }
 
-        this.engine = engine;
+            img.loading = "lazy";
+            img.decoding = "async";
 
-        this.images = Array.from(document.querySelectorAll("img"));
-
-        this.setupObserver();
-
-        this.engine.logger?.log("Images module initialized");
-
-    }
-
-    /**
-     * Create IntersectionObserver
-     */
-    setupObserver() {
-
-        if (typeof window === "undefined") return;
-
-        const IO = window.IntersectionObserver;
-
-        if (!IO) return;
-
-        this.observer = new IO((entries, obs) => {
-
-            entries.forEach(entry => {
-
-                if (!entry.isIntersecting) return;
-
-                const img = entry.target;
-
-                this.loadImage(img);
-
-                obs.unobserve(img);
-
-            });
-
-        }, {
-
-            rootMargin: "200px"
+            obs.unobserve(img);
         });
+    }, {
+        rootMargin: "200px"
+    });
 
-        this.images.forEach(img => {
+    images.forEach(img => io.observe(img));
 
-            if (img.dataset.loaded === "true") return;
+    console.log("[WPE] Images optimized");
 
-            this.observer.observe(img);
-
-        });
-
-    }
-
-    /**
-     * Load image safely
-     */
-    loadImage(img) {
-
-        try {
-
-            const src = img.getAttribute("data-src") || img.src;
-
-            if (!src) return;
-
-            const image = new Image();
-
-            image.src = src;
-
-            image.decode?.().then(() => {
-
-                img.src = src;
-
-                img.dataset.loaded = "true";
-
-                img.classList.add("wpe-loaded");
-
-            }).catch(() => {
-
-                img.src = src;
-
-            });
-
-        } catch (err) {
-
-            console.warn("Image load error:", err);
-
-        }
-
-    }
-
-}
+})();
