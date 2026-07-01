@@ -1,8 +1,12 @@
 (function () {
     'use strict';
-
     console.log("[WPE FINAL MASTER] Engine Loaded");
-
+    // ==========================================
+    // WPE Debug Mode
+    // Enable using:
+    // https://yoursite.com/?wpe_debug=1
+    // ==========================================
+    const WPE_DEBUG = location.search.includes("wpe_debug=1");
     const WPE = {
         state: {
             mode: "SAFE",
@@ -152,12 +156,16 @@
 
         /* ---------------- DebugConsole ---------------- */
         debugConsole() {
+            if (!WPE_DEBUG) return;
+        
+            console.log("%c🚀 WPE Debug Mode Enabled", "color:#00d084;font-size:14px;font-weight:bold;");
         
             setInterval(() => {
         
-                console.clear();
-        
-                console.group("🚀 WPE FINAL MASTER");
+                console.groupCollapsed(
+                    `%c🚀 WPE REPORT (${new Date().toLocaleTimeString()})`,
+                    "color:#00d084;font-weight:bold;"
+                );
         
                 console.table({
                     Mode: this.state.mode,
